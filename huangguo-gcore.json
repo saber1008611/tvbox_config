@@ -1,0 +1,14 @@
+{
+  "sites": [
+    {
+      "key": "huangguo_noproxy",
+      "name": "黄果短剧(免代理)",
+      "type": 3,
+      "searchable": 1,
+      "quickSearch": 0,
+      "filterable": 0,
+      "changeable": 0,
+      "api": "https://gcore.jsdelivr.net/gh/saber1008611/tvbox_config@main/huangguo_noproxy.js"
+    }
+  ]
+}
