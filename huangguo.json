@@ -1,10 +1,10 @@
 {
   "sites": [
     {
-      "key": "huangguo_noproxy",
+      "key": "huangguo_noproxy1",
       "name": "黄果短剧·①推荐",
       "type": 3,
-      "api": "https://fastly.jsdelivr.net/gh/saber1008611/tvbox_config@main/huangguo_noproxy.js",
+      "api": "https://fastly.jsdelivr.net/gh/saber1008611/tvbox_config@main/huangguo_noproxy1.js",
       "ext": "https://arq9qo.wrjmtnebd.cc",
       "searchable": 1,
       "quickSearch": 0,
