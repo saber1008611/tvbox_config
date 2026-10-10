@@ -1,10 +1,11 @@
-// huangguo_noproxy.js
-// 基于 jinshengchan/huangguo-fongmi，站点常量改为免代理镜像 https://aput.qgzchztvt.cc
+// huangguo_noproxy spider —— 黄果短剧多线路版
+// 线路：① arq9qo.wrjmtnebd.cc(推荐) ② hbr6u.wrjmtnebd.cc(稳定) ③ onhqfm.wrjmtnebd.cc(备用)
+// 发布页 https://huangguo6.com/ ｜ 基于 jinshengchan/huangguo-fongmi 改写
 // FongMi / 影视TV QuickJS Spider adapter
 // Adapted from Yswag/xptv-extensions huangguo.js
 import 'assets://js/lib/crypto-js.js';
 
-const SITE = 'https://aput.qgzchztvt.cc';
+const SITE = 'https://arq9qo.wrjmtnebd.cc';
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 const IMG_KEY = 'f5d965df75336270';
 const IMG_IV = '97b60394abc2fbe1';

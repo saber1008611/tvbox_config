@@ -2,13 +2,36 @@
   "sites": [
     {
       "key": "huangguo_noproxy",
-      "name": "黄果短剧(免代理)",
+      "name": "黄果短剧·①推荐",
       "type": 3,
+      "api": "https://fastly.jsdelivr.net/gh/saber1008611/tvbox_config@main/huangguo_noproxy.js",
+      "ext": "https://arq9qo.wrjmtnebd.cc",
       "searchable": 1,
       "quickSearch": 0,
       "filterable": 0,
-      "changeable": 0,
-      "api": "https://fastly.jsdelivr.net/gh/saber1008611/tvbox_config@main/huangguo_noproxy.js"
+      "changeable": 1
+    },
+    {
+      "key": "huangguo_noproxy2",
+      "name": "黄果短剧·②稳定",
+      "type": 3,
+      "api": "https://fastly.jsdelivr.net/gh/saber1008611/tvbox_config@main/huangguo_noproxy2.js",
+      "ext": "https://hbr6u.wrjmtnebd.cc",
+      "searchable": 1,
+      "quickSearch": 0,
+      "filterable": 0,
+      "changeable": 1
+    },
+    {
+      "key": "huangguo_noproxy3",
+      "name": "黄果短剧·③备用",
+      "type": 3,
+      "api": "https://fastly.jsdelivr.net/gh/saber1008611/tvbox_config@main/huangguo_noproxy3.js",
+      "ext": "https://onhqfm.wrjmtnebd.cc",
+      "searchable": 1,
+      "quickSearch": 0,
+      "filterable": 0,
+      "changeable": 1
     }
   ]
 }
