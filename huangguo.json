@@ -1,37 +1,25 @@
 {
   "sites": [
     {
-      "key": "huangguo_noproxy1",
       "name": "黄果短剧·①推荐",
       "type": 3,
-      "api": "https://fastly.jsdelivr.net/gh/saber1008611/tvbox_config@main/huangguo_noproxy1.js",
-      "ext": "https://arq9qo.wrjmtnebd.cc",
-      "searchable": 1,
-      "quickSearch": 0,
-      "filterable": 0,
-      "changeable": 1
+      "api": "https://fastly.jsdelivr.net/gh/saber1008611/tvbox_config@main/huangguo_gupu1.js",
+      "key": "huangguo_gupu1",
+      "ext": ""
     },
     {
-      "key": "huangguo_noproxy2",
       "name": "黄果短剧·②稳定",
       "type": 3,
-      "api": "https://fastly.jsdelivr.net/gh/saber1008611/tvbox_config@main/huangguo_noproxy2.js",
-      "ext": "https://hbr6u.wrjmtnebd.cc",
-      "searchable": 1,
-      "quickSearch": 0,
-      "filterable": 0,
-      "changeable": 1
+      "api": "https://fastly.jsdelivr.net/gh/saber1008611/tvbox_config@main/huangguo_gupu2.js",
+      "key": "huangguo_gupu2",
+      "ext": ""
     },
     {
-      "key": "huangguo_noproxy3",
       "name": "黄果短剧·③备用",
       "type": 3,
-      "api": "https://fastly.jsdelivr.net/gh/saber1008611/tvbox_config@main/huangguo_noproxy3.js",
-      "ext": "https://onhqfm.wrjmtnebd.cc",
-      "searchable": 1,
-      "quickSearch": 0,
-      "filterable": 0,
-      "changeable": 1
+      "api": "https://fastly.jsdelivr.net/gh/saber1008611/tvbox_config@main/huangguo_gupu3.js",
+      "key": "huangguo_gupu3",
+      "ext": ""
     }
   ]
 }
