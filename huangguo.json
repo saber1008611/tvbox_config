@@ -1,24 +1,10 @@
 {
   "sites": [
     {
-      "name": "黄果短剧·①推荐",
+      "name": "黄果短剧(自动寻活)",
       "type": 3,
-      "api": "https://fastly.jsdelivr.net/gh/saber1008611/tvbox_config@main/huangguo_gupu1.js",
-      "key": "huangguo_gupu1",
-      "ext": ""
-    },
-    {
-      "name": "黄果短剧·②稳定",
-      "type": 3,
-      "api": "https://fastly.jsdelivr.net/gh/saber1008611/tvbox_config@main/huangguo_gupu2.js",
-      "key": "huangguo_gupu2",
-      "ext": ""
-    },
-    {
-      "name": "黄果短剧·③备用",
-      "type": 3,
-      "api": "https://fastly.jsdelivr.net/gh/saber1008611/tvbox_config@main/huangguo_gupu3.js",
-      "key": "huangguo_gupu3",
+      "api": "https://fastly.jsdelivr.net/gh/saber1008611/tvbox_config@main/huangguo_auto.js",
+      "key": "huangguo_auto",
       "ext": ""
     }
   ]
