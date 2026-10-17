@@ -10,6 +10,13 @@ const IMG_KEY = 'f5d965df75336270';
 const IMG_IV = '97b60394abc2fbe1';
 const EMPTY_IMAGE = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/lXcAAAAASUVORK5CYII=';
 
+// 封面图是否走 JS 代理。
+// 站点封面是 CDN 上的普通 JPEG/PNG（?auth_key= 签名，实测不带 Referer 也返回 200），
+// 直连时由播放器自身并发加载；走代理则每张图都要"本地代理→外网→AES 解密→base64"，
+// 首页 82 张卡、单张 7s 超时，首屏图要几十秒才出齐。
+// 若将来 CDN 加了防盗链导致图片裂开，把这里改回 true 即可。
+const USE_IMG_PROXY = false;
+
 // 发布页（发布当前线路的地方）
 const PUBLISH = ['https://huangguo6.com/', 'https://huangguoai.com/'];
 // 硬编码兜底线路（发布页打不开时用；新旧家族都留几个）
@@ -20,6 +27,30 @@ const FALLBACK = [
 ];
 
 let ACTIVE = null; // 当前可用线路 base
+
+// 探活时 getBase() 已经把首页 HTML 完整下载过一遍（只为判断 isContent），
+// 以前这里直接丢掉、homeVod 再下一遍 —— 线路首页 TTFB 实测 6.9s，等于白扔 7 秒。
+// 现在探活命中时顺手缓存，homeVod / category('home') 直接复用。
+let HOME_HTML = '';
+let HOME_BASE = '';
+let HOME_TS = 0;
+const HOME_TTL = 30000; // 30s 内复用；超过则重取，保证下拉刷新能拿到新内容
+
+function nowMs() { try { return Date.now(); } catch (e) { return 0; } }
+
+function cachedHome(base) {
+  if (!HOME_HTML || !base || HOME_BASE !== base) return '';
+  const t = nowMs();
+  if (t && HOME_TS && t - HOME_TS > HOME_TTL) return '';
+  return HOME_HTML;
+}
+
+function setHomeCache(html, base) {
+  HOME_HTML = html || '';
+  HOME_BASE = base || '';
+  HOME_TS = nowMs();
+}
+
 
 function baseHeaders(referer) {
   return {
@@ -76,9 +107,15 @@ function isContent(h) {
 
 function getBase(force) {
   if (ACTIVE && !force) return ACTIVE;
+  if (force) { HOME_HTML = ''; HOME_BASE = ''; HOME_TS = 0; }
   const cands = discoverSites();
   for (const b of cands) {
-    if (isContent(reqHtml(b + '/'))) { ACTIVE = b; return b; }
+    const h = reqHtml(b + '/');
+    if (isContent(h)) {
+      ACTIVE = b;
+      setHomeCache(h, b); // 探活拿到的首页留着给 homeVod 用
+      return b;
+    }
   }
   ACTIVE = cands[0] || FALLBACK[0];
   return ACTIVE;
@@ -87,10 +124,18 @@ function getBase(force) {
 // 取内容页：当前线路失败则重选线路再试一次
 function fetchPage(path) {
   let base = getBase();
+  if (path === '/') {
+    const c = cachedHome(base);
+    if (c) return c;
+  }
   let h = reqHtml(base + path, base + '/');
-  if (h && h.length > 1500) return h;
+  if (h && h.length > 1500) {
+    if (path === '/') setHomeCache(h, base);
+    return h;
+  }
   base = getBase(true);
   h = reqHtml(base + path, base + '/');
+  if (h && path === '/') setHomeCache(h, base);
   return h || '';
 }
 
@@ -105,6 +150,7 @@ function fix(u) {
 function coverUrl(u) {
   u = fix(u);
   if (!/^https?:\/\//i.test(u)) return '';
+  if (!USE_IMG_PROXY) return u; // 直连 CDN，交给播放器并发加载
   return getProxy(true) + '&siteKey=' + KEY + '&url=' + encodeURIComponent(u);
 }
 
@@ -339,7 +385,11 @@ export default {
   homeVod() {
     try {
       const base = getBase();
-      const html = reqHtml(base + '/', base + '/');
+      let html = cachedHome(base);
+      if (!html) {
+        html = reqHtml(base + '/', base + '/');
+        if (html) setHomeCache(html, base);
+      }
       return JSON.stringify({ list: parseGridCards(html, true) });
     } catch (e) { return JSON.stringify({ list: [] }); }
   },
