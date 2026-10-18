@@ -19,11 +19,10 @@ const USE_IMG_PROXY = false;
 
 // 发布页（发布当前线路的地方）
 const PUBLISH = ['https://huangguo6.com/', 'https://huangguoai.com/'];
-// 硬编码兜底线路（发布页打不开时用；新旧家族都留几个）
+// 硬编码兜底线路（发布页打不开时用；当前有效线路均为 *.nx51k64p.cc 家族）
 const FALLBACK = [
-  'https://ukr8b9.uc41p53k.cc', 'https://p5z1.uc41p53k.cc', 'https://igqu.uc41p53k.cc',
-  'https://jzhk.gupuoplgm.cc', 'https://arwkjz.gupuoplgm.cc', 'https://x8u4o.gupuoplgm.cc',
-  'https://50f2.gupuoplgm.cc', 'https://nj9ev.gupuoplgm.cc'
+  'https://xjudu.nx51k64p.cc', 'https://imgue2.nx51k64p.cc', 'https://sdyz5.nx51k64p.cc',
+  'https://ukr8b9.uc41p53k.cc', 'https://p5z1.uc41p53k.cc', 'https://igqu.uc41p53k.cc'
 ];
 
 let ACTIVE = null; // 当前可用线路 base
