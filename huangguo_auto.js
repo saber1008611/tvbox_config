@@ -10,12 +10,14 @@ const IMG_KEY = 'f5d965df75336270';
 const IMG_IV = '97b60394abc2fbe1';
 const EMPTY_IMAGE = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/lXcAAAAASUVORK5CYII=';
 
-// 封面图是否走 JS 代理。
-// 站点封面是 CDN 上的普通 JPEG/PNG（?auth_key= 签名，实测不带 Referer 也返回 200），
-// 直连时由播放器自身并发加载；走代理则每张图都要"本地代理→外网→AES 解密→base64"，
-// 首页 82 张卡、单张 7s 超时，首屏图要几十秒才出齐。
-// 若将来 CDN 加了防盗链导致图片裂开，把这里改回 true 即可。
-const USE_IMG_PROXY = false;
+// 封面图必须走 JS 代理（2026-10-18 实测纠正）。
+// pic.drleao.cn 返回的**不是**普通 JPEG/PNG，而是 AES 加密后的字节：
+//   无 Referer 请求 -> HTTP 200 / binary/octet-stream / 前 4 字节 DD E2 8C 47（非图片魔数）
+//   本地 AES-128-CBC(key=f5d965df75336270, iv=97b60394abc2fbe1, NoPadding) 解密后
+//   -> 89504E47…(PNG) / FFD8FFDB…(JPEG) 正常图片。
+// 所以直连时播放器拿到的是密文 ⇒ 全部裂图。代价是每张图要走"播放器→本地代理→CDN→AES→base64"，
+// 单张 7s 超时、且响应带 Cache-Control: max-age=3600，翻页时命中本地缓存就不再重复解密。
+const USE_IMG_PROXY = true;
 
 // 发布页（发布当前线路的地方）
 // 2026-10-18 实测：huangguoai.com 已完全不通（>14.5s 无响应），每次冷启动白等满 15s 超时；
@@ -28,6 +30,7 @@ const FALLBACK = [
 ];
 
 let ACTIVE = null; // 当前可用线路 base
+let EXT = {};      // init(ext) 存进来：{ "port": 9978 } 可覆盖本地图片代理端口
 
 // 探活时 getBase() 已经把首页 HTML 完整下载过一遍（只为判断 isContent），
 // 以前这里直接丢掉、homeVod 再下一遍 —— 线路首页 TTFB 实测 6.9s，等于白扔 7 秒。
@@ -58,7 +61,7 @@ function baseHeaders(referer) {
     'User-Agent': UA,
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
     'Accept-Language': 'zh-CN,zh;q=0.9',
-    'Referer': referer || 'https://huangguoai.com/'
+    'Referer': referer || 'https://huangguoai.ai/'
   };
 }
 
@@ -148,11 +151,23 @@ function fix(u) {
   return u;
 }
 
+// 本地图片代理地址（TVBox js0 约定：http://127.0.0.1:<端口>/proxy?do=js）。
+// 站点封面在 CDN 上是 AES 密文，必须由本机代理取回→解密→以图片返回，播放器直连只会拿到密文。
+// 端口默认 9978（TVBox 系默认值）；如果你的 App 改过端口，把站点的 ext 填成 {"port":9977} 即可。
+function getProxy() {
+  let port = 9978;
+  try {
+    const p = parseInt(EXT.port, 10);
+    if (p > 0 && p < 65536) port = p;
+  } catch (e) {}
+  return 'http://127.0.0.1:' + port + '/proxy?do=js';
+}
+
 function coverUrl(u) {
   u = fix(u);
   if (!/^https?:\/\//i.test(u)) return '';
-  if (!USE_IMG_PROXY) return u; // 直连 CDN，交给播放器并发加载
-  return getProxy(true) + '&siteKey=' + KEY + '&url=' + encodeURIComponent(u);
+  if (!USE_IMG_PROXY) return u; // 直连 CDN（注意：CDN 上是密文，直连会裂图）
+  return getProxy() + '&siteKey=' + KEY + '&url=' + encodeURIComponent(u);
 }
 
 function imageType(b64) {
@@ -379,7 +394,7 @@ function detailEpisodesFromApi(id) {
 }
 
 export default {
-  init(ext) { this.ext = ext || {}; },
+  init(ext) { EXT = ext || {}; this.ext = EXT; },
 
   home(filter) { return JSON.stringify({ class: CLASSES }); },
 
