@@ -18,7 +18,9 @@ const EMPTY_IMAGE = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP
 const USE_IMG_PROXY = false;
 
 // 发布页（发布当前线路的地方）
-const PUBLISH = ['https://huangguo6.com/', 'https://huangguoai.com/'];
+// 2026-10-18 实测：huangguoai.com 已完全不通（>14.5s 无响应），每次冷启动白等满 15s 超时；
+// 同品牌的 huangguoai.ai 1.6s 正常返回 3 条线路（hjgd/oc83/ik4wwi.ye28r31s.cc），故替换之。
+const PUBLISH = ['https://huangguo6.com/', 'https://huangguoai.ai/'];
 // 硬编码兜底线路（发布页打不开时用；当前有效线路均为 *.nx51k64p.cc 家族）
 const FALLBACK = [
   'https://xjudu.nx51k64p.cc', 'https://imgue2.nx51k64p.cc', 'https://sdyz5.nx51k64p.cc',
