@@ -1,7 +1,7 @@
 // huangguo_auto spider —— 黄果短剧「自动寻活」版
 // 站点线路域名频繁轮换(曾 wrjmtnebd→gupuoplgm→uc41p53k)，写死必坏。
 // 本版运行时抓发布页解析当前可用线路，挑一个能渲染的用，域名轮换也能自动跟上。
-// 发布页 https://huangguo6.com/ ｜ https://huangguoai.com/
+// 发布页 https://huangguo6.com/ ｜ https://huangguoai.ai/
 import 'assets://js/lib/crypto-js.js';
 
 const KEY = 'huangguo_auto';
