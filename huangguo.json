@@ -1,11 +1,11 @@
 {
-  "sites": [
-    {
-      "name": "黄果短剧(自动寻活)",
-      "type": 3,
-      "api": "https://fastly.jsdelivr.net/gh/saber1008611/tvbox_config@70b6b07cd0e8df3eb0ae653f7f6a1c63ef369dbe/huangguo_auto.js",
-      "key": "huangguo_auto",
-      "ext": ""
-    }
-  ]
+    "sites":  [
+                  {
+                      "name":  "黄果短剧(自动寻活)",
+                      "type":  3,
+                      "api":  "https://fastly.jsdelivr.net/gh/saber1008611/tvbox_config@6dea044cbe95936e9dbe582a06f3b5bb446a644a/huangguo_auto.js",
+                      "key":  "huangguo_auto",
+                      "ext":  ""
+                  }
+              ]
 }
