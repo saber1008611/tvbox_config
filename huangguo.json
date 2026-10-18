@@ -3,7 +3,7 @@
                   {
                       "name":  "黄果短剧(自动寻活)",
                       "type":  3,
-                      "api":  "https://fastly.jsdelivr.net/gh/saber1008611/tvbox_config@3dcdb4653e270003dbc6e99678cc8ac9724bbe67/huangguo_auto.js",
+                      "api":  "https://fastly.jsdelivr.net/gh/saber1008611/tvbox_config@0f255a7fb55287b108c63e18a9adb0a725e1aec9/huangguo_auto.js",
                       "key":  "huangguo_auto",
                       "ext":  ""
                   }
