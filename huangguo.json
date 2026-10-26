@@ -1,9 +1,9 @@
 {
     "sites":  [
                   {
-                      "name":  "黄果短剧(自动寻活)",
+                      "name":  "榛勬灉鐭墽(鑷姩瀵绘椿)",
                       "type":  3,
-                      "api":  "https://fastly.jsdelivr.net/gh/saber1008611/tvbox_config@0f255a7fb55287b108c63e18a9adb0a725e1aec9/huangguo_auto.js",
+                      "api":  "https://fastly.jsdelivr.net/gh/saber1008611/tvbox_config@5405a5247b32c152f2b8d05707dce5a6b11959ac/huangguo_auto.js",
                       "key":  "huangguo_auto",
                       "ext":  ""
                   }
