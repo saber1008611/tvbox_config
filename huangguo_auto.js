@@ -22,7 +22,11 @@ const USE_IMG_PROXY = true;
 // 发布页（发布当前线路的地方）
 // 2026-10-18 实测：huangguoai.com 已完全不通（>14.5s 无响应），每次冷启动白等满 15s 超时；
 // 同品牌的 huangguoai.ai 1.6s 正常返回 3 条线路（hjgd/oc83/ik4wwi.ye28r31s.cc），故替换之。
-const PUBLISH = ['https://huangguo6.com/', 'https://huangguoai.ai/'];
+// 2026-10-26 新增 hgdhy1.com/way-home（官方"最新地址 / 防迷路"页）：
+//   实测 200 / 227KB / 0.94s，含 __NEXT_DATA__.sourceList(type=VID) 线路 + "直连无需代理"卡片；
+//   当天 huangguo6.com 给的是 vnir.h2na6qa39.cc（200 / 337ms / hg-card-grid 可渲染），
+//   huangguoai.ai 给的是 *.40ygo615.cc；新页给的 *.kuqawj.cn 是 APP 专用签名线路，直连 403。
+const PUBLISH = ['https://huangguo6.com/', 'https://huangguoai.ai/', 'https://hgdhy1.com/way-home'];
 // 硬编码兜底线路（发布页打不开时用；当前有效线路均为 *.nx51k64p.cc 家族）
 const FALLBACK = [
   'https://xjudu.nx51k64p.cc', 'https://imgue2.nx51k64p.cc', 'https://sdyz5.nx51k64p.cc',
@@ -65,63 +69,118 @@ function baseHeaders(referer) {
   };
 }
 
-function reqHtml(url, referer) {
-  try {
-    const r = req(url, { method: 'get', headers: baseHeaders(referer), timeout: 15000 });
-    if (!r) return '';
-    return typeof r.content === 'string' ? r.content : '';
-  } catch (e) { return ''; }
+// 2026-10-26：新线路 h2na6qa39.cc / 40ygo615.cc 有"连接被重置"的毛病
+// （实测同一 URL 有时第一次就 ECONNRESET，隔一下再请求就 200，命中率大概一半）。
+// 所以这里加"秒失败重试"：只有失败得很快（<3s，说明是重置/立即 4xx，不是真的超时）才重试，
+// 最多 3 次；超时的那种不再白等第二遍。
+function reqHtml(url, referer, timeout) {
+  const t = timeout || 15000;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const t0 = nowMs();
+    try {
+      const r = req(url, { method: 'get', headers: baseHeaders(referer), timeout: t });
+      const c = r && typeof r.content === 'string' ? r.content : '';
+      if (c) return c;
+      if (nowMs() - t0 > 3000) return '';
+    } catch (e) {
+      if (nowMs() - t0 > 3000) return '';
+    }
+  }
+  return '';
 }
 
-// 从发布页 HTML 抽取线路域名
+// 从发布页 HTML 抽取线路域名（兼容三种发布页格式）
 function extractDomains(html) {
   const out = [];
-  let re, m;
-  // 发布页 meta："线路 01地址 ukr8b9.uc41p53k.cc"
+  let re, m, u;
+  // ① 旧发布页 meta："线路 01地址 ukr8b9.uc41p53k.cc"
   re = /线路\s*\d+\s*地址\s*([a-z0-9][a-z0-9.-]*\.[a-z]+)/gi;
   while ((m = re.exec(html)) !== null) out.push(m[1]);
-  // 兜底：页面里任意 xxx.yyy.cc 线路子域
+  // ② 兜底：页面里任意 xxx.yyy.cc 线路子域
   re = /https?:\/\/([a-z0-9-]+\.[a-z0-9-]+\.cc)\b/gi;
   while ((m = re.exec(html)) !== null) out.push(m[1]);
+  // ③ 新发布页（hgdhy1.com/way-home，Next.js）"直连无需代理"卡片的域名：
+  //    <p class="WayHomePageView_routeDomain__T8Fgu">oqdfj.com</p>
+  re = /routeDomain__[A-Za-z0-9_]+">([a-z0-9][a-z0-9.-]*\.[a-z]{2,})</gi;
+  while ((m = re.exec(html)) !== null) out.push(m[1]);
+  //    同页按钮 aria-label="立即进入 https://xxx"
+  re = /立即进入\s*(https?:\/\/[a-z0-9][a-z0-9.-]*\.[a-z]{2,})/gi;
+  while ((m = re.exec(html)) !== null) out.push(m[1].replace(/^https?:\/\//i, ''));
+  //    同页 __NEXT_DATA__.sourceList 里 type=VID 的线路；
+  //    其余 type（GUIDE/IMAGE/AppStore/TELEGRAM/Mailbox…）是官网、图片床、社交，不能当线路。
+  re = /"type":"VID"/g;
+  while ((m = re.exec(html)) !== null) {
+    const win = html.slice(Math.max(0, m.index - 700), m.index);
+    const ur = /"url":"(https?:\/\/[a-z0-9][a-z0-9.-]*\.[a-z]{2,})"/gi;
+    while ((u = ur.exec(win)) !== null) out.push(u[1].replace(/^https?:\/\//i, ''));
+  }
 
   const seen = {}, res = [];
-  const ban = /(huangguo|googletag|cloudflare|gstatic|google|yandex|x\.com|t\.me|jsdelivr|allorigins|tc41p53k|ikorimlt)/i;
+  // 官网 / 统计 / 社交 / 图片床都不可能是内容线路
+  const ban = /(huangguo|hgdhy1|hgdj|googletag|cloudflare|cloudfront|gstatic|google|yandex|x\.com|t\.me|jsdelivr|allorigins|instagram|youtube|ahrefs|gmail|tc41p53k|ikorimlt)/i;
   for (const d of out) {
-    if (seen[d]) continue;
-    seen[d] = 1;
-    if (ban.test(d)) continue;
-    res.push('https://' + d);
+    const host = String(d).toLowerCase().replace(/\/.*$/, '');
+    if (!host || seen[host]) continue;
+    seen[host] = 1;
+    if (ban.test(host)) continue;
+    res.push('https://' + host);
   }
-  return res;
+  return rankCands(res);
 }
 
-function discoverSites() {
-  const cands = [];
-  for (const p of PUBLISH) {
-    const h = reqHtml(p);
-    if (h) for (const u of extractDomains(h)) if (cands.indexOf(u) < 0) cands.push(u);
+// 排序：a.b.cc 这类线路子域优先探活，oqdfj.com 这类两段式官网域名放最后。
+// 目的：冷启动先撞上能直连的线路，别把时间花在官网落地页上。
+function rankCands(list) {
+  const line = [], other = [];
+  for (let i = 0; i < list.length; i++) {
+    const host = list[i].replace(/^https?:\/\//i, '');
+    if (host.split('.').length >= 3) line.push(list[i]); else other.push(list[i]);
   }
-  for (const f of FALLBACK) if (cands.indexOf(f) < 0) cands.push(f);
-  return cands;
+  return line.concat(other);
 }
 
 function isContent(h) {
   return !!h && (h.indexOf('hg-card-grid') >= 0 || h.indexOf('hg-drama-card') >= 0);
 }
 
+// 逐页探活：抓一页发布页 → 立刻按顺序试它给的线路 → 都不行再抓下一页。
+// 以前是"先把所有发布页抓完再试"，3 个发布页就白等 3 秒；现在第一页有活线路就只花一页的时间。
+// 探活超时 8s：旧线路家族首页 TTFB 实测到过 6.9s，压到 6s 会误杀慢但能用的线路。
 function getBase(force) {
   if (ACTIVE && !force) return ACTIVE;
   if (force) { HOME_HTML = ''; HOME_BASE = ''; HOME_TS = 0; }
-  const cands = discoverSites();
-  for (const b of cands) {
-    const h = reqHtml(b + '/');
+  const seen = {};
+  let first = '';
+  for (let pi = 0; pi < PUBLISH.length; pi++) {
+    const pageHtml = reqHtml(PUBLISH[pi]);
+    if (!pageHtml) continue;
+    const cands = extractDomains(pageHtml);
+    for (let ci = 0; ci < cands.length; ci++) {
+      const b = cands[ci];
+      if (seen[b]) continue;
+      seen[b] = 1;
+      if (!first) first = b;
+      const h = reqHtml(b + '/', PUBLISH[pi], 8000);
+      if (isContent(h)) {
+        ACTIVE = b;
+        setHomeCache(h, b); // 探活拿到的首页留着给 homeVod 用
+        return b;
+      }
+    }
+  }
+  for (let fi = 0; fi < FALLBACK.length; fi++) {
+    const b = FALLBACK[fi];
+    if (seen[b]) continue;
+    seen[b] = 1;
+    if (!first) first = b;
+    const h = reqHtml(b + '/', PUBLISH[0], 8000);
     if (isContent(h)) {
       ACTIVE = b;
-      setHomeCache(h, b); // 探活拿到的首页留着给 homeVod 用
+      setHomeCache(h, b);
       return b;
     }
   }
-  ACTIVE = cands[0] || FALLBACK[0];
+  ACTIVE = first || FALLBACK[0];
   return ACTIVE;
 }
 
@@ -141,6 +200,17 @@ function fetchPage(path) {
   h = reqHtml(base + path, base + '/');
   if (h && path === '/') setHomeCache(h, base);
   return h || '';
+}
+
+// 取观看页：当前线路失败则换线路再试一次。
+// detail() 以前直接用 reqHtml，线路偶发连接重置时整部剧会退化成"标题=数字、只有 1 集"。
+function fetchDetailHtml(id) {
+  let base = getBase();
+  let h = reqHtml(base + '/video/' + id + '/', base + '/');
+  if (h && h.length > 1500) return { base: base, html: h };
+  base = getBase(true);
+  h = reqHtml(base + '/video/' + id + '/', base + '/');
+  return { base: base, html: h || '' };
 }
 
 function fix(u) {
@@ -382,12 +452,14 @@ function parsePlayUrl(html, id, ep) {
   return '';
 }
 
-function detailEpisodesFromApi(id) {
+function detailEpisodesFromApi(id, base) {
   try {
-    const r = reqHtml(getBase() + '/api/videos/' + id, getBase() + '/');
+    const b = base || getBase();
+    const r = reqHtml(b + '/api/videos/' + id, b + '/');
     const data = JSON.parse(r).data || {};
     const arr = data.episodes || [];
     let eps = arr.map(function (e) { return parseInt(e.ep_num || e.ep || e.num, 10); }).filter(function (n) { return !isNaN(n); });
+    eps.sort(function (x, y) { return x - y; });
     if (!eps.length && data.video_url) eps = [1];
     return eps;
   } catch (e) { return []; }
@@ -434,11 +506,14 @@ export default {
     id = String(id || '').trim();
     if (!id) return JSON.stringify({ list: [] });
     try {
-      const base = getBase();
-      const html = reqHtml(base + '/video/' + id + '/', base + '/');
-      let eps = Object.keys(extractEpMap(html)).map(function (k) { return parseInt(k, 10); })
+      const got = fetchDetailHtml(id);
+      const base = got.base;
+      const html = got.html;
+      // 集数以 /api/videos/{id} 为准：观看页内联的 epPlaySrcs 只有当前集附近的 2~3 集，
+      // 拿它当总集数会让 13 集的剧只显示 2 集（2026-10-26 实测 9909/5667/9885/10268 全是这样）。
+      let eps = detailEpisodesFromApi(id, base);
+      if (!eps.length) eps = Object.keys(extractEpMap(html)).map(function (k) { return parseInt(k, 10); })
         .filter(function (n) { return !isNaN(n); }).sort(function (a, b) { return a - b; });
-      if (!eps.length) eps = detailEpisodesFromApi(id);
       if (!eps.length) eps = [1];
 
       const playList = [];
