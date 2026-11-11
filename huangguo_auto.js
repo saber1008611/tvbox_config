@@ -452,6 +452,42 @@ function parsePlayUrl(html, id, ep) {
   return '';
 }
 
+// 2026-11-11：站点把播放地址从"观看页内嵌 epPlaySrcs"改成了
+// POST /api/videos/{id}/episodes/{ep}/playback（返回 data.streams.main + data.cdn 鉴权头）。
+// 新前端（cyber-video.js）只在起播时调这个接口，页面 HTML 里连 m3u8 字样都没有了，
+// 所以老写法 parsePlayUrl 只能返回空串 → TVBox 报"播放地址加载失败，错误代码：-1"。
+// 实测该接口不需要签名（明文 POST {} 即返回），带不带 origin/referer 都一样。
+function playbackApi(base, id, ep) {
+  const b = base || getBase();
+  const url = b + '/api/videos/' + id + '/episodes/' + ep + '/playback';
+  const headers = {
+    'User-Agent': UA,
+    'Accept': 'application/json, text/plain, */*',
+    'Content-Type': 'application/json',
+    'Referer': b + '/video/' + id + '/'
+  };
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const t0 = nowMs();
+    try {
+      const r = req(url, { method: 'post', headers: headers, body: '{}', timeout: 12000 });
+      const c = r && typeof r.content === 'string' ? r.content : '';
+      if (c) {
+        const d = (JSON.parse(c) || {}).data || {};
+        const main = d.streams && d.streams.main ? normPlayUrl(d.streams.main) : '';
+        if (!main) return null;
+        const header = { 'User-Agent': UA, 'Referer': b + '/' };
+        const cdn = d.cdn || {};
+        if (cdn.authKey && cdn.authValue) header[cdn.authKey] = cdn.authValue;
+        return { url: main, header: header };
+      }
+      if (nowMs() - t0 > 3000) return null;
+    } catch (e) {
+      if (nowMs() - t0 > 3000) return null;
+    }
+  }
+  return null;
+}
+
 function detailEpisodesFromApi(id, base) {
   try {
     const b = base || getBase();
@@ -551,6 +587,11 @@ export default {
       const vid = parts.length > 1 ? parts[1] : '';
       const ep = parts.length > 2 ? parts[2] : '1';
       if (!pageUrl) return JSON.stringify({ parse: 0, url: '' });
+      // ① 新接口取址（2026-11-11 起唯一可靠的路径）
+      let got = playbackApi(getBase(), vid, ep);
+      if (!got) { ACTIVE = null; got = playbackApi(getBase(true), vid, ep); }
+      if (got) return JSON.stringify({ parse: 0, url: got.url, header: got.header });
+      // ② 老前端：观看页内嵌 epPlaySrcs / m3u8
       const html = reqHtml(pageUrl, getBase() + '/');
       let play = parsePlayUrl(html, vid, ep);
       if (!play) {
